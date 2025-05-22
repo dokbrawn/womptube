@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Безопасность
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "your-default-secret-key")
-DEBUG = os.environ.get("DEBUG", "False") == "True"
+DEBUG = True
 ALLOWED_HOSTS = ["*"]  # Замените на ваш домен в продакшене
 
 # Приложения
@@ -38,32 +38,39 @@ MIDDLEWARE = [
 
 # CORS
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Ваш фронтенд в режиме разработки
-    # Добавьте другие разрешённые источники по мере необходимости
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",     # иногда нужен и этот
+    "http://localhost:8000",     # если frontend запущен через Django
+    "http://127.0.0.1:8000",     # 👈 добавь это
+                                 # Ваш фронтенд в режиме разработки
+                                 # Добавьте другие разрешённые источники по мере необходимости
 ]
 
 # База данных
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
         conn_max_age=600,
         conn_health_checks=True,
     )
 }
 
+
 # Статические файлы
-STATIC_URL = '/static/'
+STATIC_URL = '/assets/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR.parent, 'frontend', 'dist', 'assets')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, '../frontend/dist')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Медиа файлы
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Шаблоны
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(BASE_DIR.parent, 'frontend', 'dist')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -75,7 +82,6 @@ TEMPLATES = [
         },
     },
 ]
-
 
 # JWT аутентификация
 REST_FRAMEWORK = {
@@ -91,3 +97,4 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

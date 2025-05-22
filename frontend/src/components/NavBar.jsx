@@ -2,7 +2,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "../utils/axiosInstance";
 import Fuse from "fuse.js";
+import { useTheme } from "../contexts/ThemeContext"; // Хук темы
 import {
+  SunIcon,
+  MoonIcon,
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
   ArrowLeftOnRectangleIcon,
@@ -11,15 +14,15 @@ import {
 
 function NavBar({ username, setUsername }) {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [allVideos, setAllVideos] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    axios.get("http://localhost:8000/api/videos/").then((res) => {
-      setAllVideos(res.data);
-    });
+    axios.get("/videos/").then((res) => setAllVideos(res.data));
   }, []);
 
   useEffect(() => {
@@ -53,13 +56,11 @@ function NavBar({ username, setUsername }) {
   };
 
   const handleSearchKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
-    <nav className="bg-[#0f0f0f] text-white px-6 h-16 flex items-center justify-between fixed top-0 left-16 sm:left-20 right-0 z-50">
+    <nav className="backdrop-blur-lg bg-black/30 shadow-inner text-white px-6 h-16 flex items-center justify-between fixed top-0 left-16 sm:left-20 right-0 z-50 transition-all duration-300">
       <Link
         to="/"
         className="text-xl sm:text-2xl font-bold text-blue-500 flex items-center gap-2 hover:text-blue-400 transition"
@@ -78,7 +79,7 @@ function NavBar({ username, setUsername }) {
             }}
             onKeyDown={handleSearchKeyDown}
             placeholder="Поиск видео..."
-            className="w-full px-4 py-2 pl-10 rounded-full bg-[#1c1c1c] text-white border border-[#333] focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-400"
+            className="w-full px-4 py-2 pl-10 rounded-full bg-[#1c1c1c]/80 text-white border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-400"
           />
           <MagnifyingGlassIcon
             className="w-5 h-5 text-gray-400 absolute top-2.5 left-3 cursor-pointer"
@@ -86,9 +87,8 @@ function NavBar({ username, setUsername }) {
           />
         </div>
 
-        {/* Подсказки */}
         {showSuggestions && suggestions.length > 0 && (
-          <ul className="absolute z-50 mt-1 w-full bg-[#1c1c1c] border border-[#333] rounded-xl shadow-lg max-h-64 overflow-auto">
+          <ul className="absolute z-50 mt-1 w-full bg-[#1c1c1c]/90 backdrop-blur border border-transparent rounded-xl shadow-lg max-h-64 overflow-auto">
             {suggestions.map((video) => (
               <li
                 key={video.id}
@@ -107,6 +107,18 @@ function NavBar({ username, setUsername }) {
       </div>
 
       <div className="flex items-center gap-3 text-sm">
+        <button
+          onClick={toggleTheme}
+          title="Переключить тему"
+          className="p-1.5 rounded-full bg-white/10 dark:bg-white/20 hover:bg-blue-500/70 transition duration-300"
+        >
+          {theme === "dark" ? (
+            <SunIcon className="w-5 h-5 text-yellow-400" />
+          ) : (
+            <MoonIcon className="w-5 h-5 text-blue-800" />
+          )}
+        </button>
+
         {username ? (
           <>
             <Link

@@ -16,8 +16,7 @@ function Sidebar() {
       initial={{ x: -100 }}
       animate={{ x: 0 }}
       transition={{ duration: 0.3 }}
-      className="h-screen w-16 sm:w-20 bg-[#0f0f0f] text-white flex flex-col items-center py-4 fixed left-0 top-0 z-40 shadow-lg"
-
+      className="h-screen w-16 sm:w-20 bg-black/30 backdrop-blur-lg shadow-inner text-white flex flex-col items-center py-4 fixed left-0 top-0 z-50"
     >
       <div className="flex flex-col gap-6">
         {navItems.map(({ path, label, icon }) => (
@@ -25,8 +24,10 @@ function Sidebar() {
             key={path}
             to={path}
             title={label}
-            className={`p-2 rounded-md flex justify-center hover:bg-blue-600 transition ${
-              location.pathname === path ? "bg-blue-700" : ""
+            className={`p-2 rounded-md flex justify-center transition-all ${
+              location.pathname === path
+                ? "bg-blue-700"
+                : "hover:bg-blue-600/60"
             }`}
           >
             {icon}

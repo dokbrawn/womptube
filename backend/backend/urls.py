@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include, re_path  # ✅ добавлен re_path
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
@@ -17,12 +17,7 @@ urlpatterns = [
     path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/videos/<int:pk>/comment/', add_comment, name='add_comment'),
-
-    # Главная страница для SPA (vite)
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
-
-    # Для всех остальных путей — также index.html
-    re_path(r'^.*$', TemplateView.as_view(template_name="index.html")),
+    path('', TemplateView.as_view(template_name="index.html")),
 ]
 
 if settings.DEBUG:

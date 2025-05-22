@@ -3,11 +3,11 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.contrib.auth.models import User
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
 
-from .models import Video, Comment, Like
+from .models import Video, Comment, Like, Dislike
 from .serializers import VideoSerializer, CommentSerializer, UserSerializer
 
 
@@ -17,21 +17,52 @@ class VideoViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
 
+    def create(self, request, *args, **kwargs):
+        print("📂 FILES:", request.FILES)
+        print("📝 DATA:", request.data)
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
     def perform_destroy(self, instance):
         if instance.author != self.request.user:
             raise PermissionDenied("Вы не можете удалить это видео")
         instance.delete()
 
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def like(self, request, pk=None):
         video = self.get_object()
-        like, created = Like.objects.get_or_create(video=video, user=request.user)
-        if not created:
-            return Response({'detail': 'Already liked'}, status=400)
-        return Response({'detail': 'Liked'})
+        user = request.user
+
+        # Удалить дизлайк, если есть
+        Dislike.objects.filter(video=video, user=user).delete()
+
+        # Переключение лайка
+        existing_like = Like.objects.filter(video=video, user=user)
+        if existing_like.exists():
+            existing_like.delete()
+            return Response({'detail': 'Лайк убран'}, status=200)
+
+        Like.objects.create(video=video, user=user)
+        return Response({'detail': 'Лайк поставлен'}, status=200)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def dislike(self, request, pk=None):
+        video = self.get_object()
+        user = request.user
+
+        # Удалить лайк, если есть
+        Like.objects.filter(video=video, user=user).delete()
+
+        # Переключение дизлайка
+        existing_dislike = Dislike.objects.filter(video=video, user=user)
+        if existing_dislike.exists():
+            existing_dislike.delete()
+            return Response({'detail': 'Дизлайк убран'}, status=200)
+
+        Dislike.objects.create(video=video, user=user)
+        return Response({'detail': 'Дизлайк поставлен'}, status=200)
 
     @action(detail=True, methods=['post'])
     def views(self, request, pk=None):
@@ -43,25 +74,27 @@ class VideoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], parser_classes=[JSONParser])
     def comment(self, request, pk=None):
         video = self.get_object()
-        content = request.data.get("content", "")
+        content = request.data.get("content", "").strip()
+
         if not content:
             return Response({"error": "Комментарий не может быть пустым"}, status=400)
+
         comment = Comment.objects.create(video=video, author=request.user, content=content)
         return Response(CommentSerializer(comment).data, status=201)
 
 
 @api_view(['POST'])
-@permission_classes([permissions.AllowAny])
+@permission_classes([AllowAny])
 def register(request):
     username = request.data.get('username')
     email = request.data.get('email')
     password = request.data.get('password')
 
     if not username or not password:
-        return Response({'error': 'Username and password required'}, status=400)
+        return Response({'error': 'Имя пользователя и пароль обязательны'}, status=400)
 
     if User.objects.filter(username=username).exists():
-        return Response({'error': 'Username already taken'}, status=400)
+        return Response({'error': 'Имя пользователя уже занято'}, status=400)
 
     user = User.objects.create_user(username=username, email=email, password=password)
     return Response(UserSerializer(user).data)
@@ -71,9 +104,11 @@ def register(request):
 @permission_classes([IsAuthenticated])
 def add_comment(request, pk):
     video = get_object_or_404(Video, pk=pk)
-    content = request.data.get('content')
+    content = request.data.get('content', '').strip()
+
     if not content:
         return Response({'error': 'Комментарий пустой'}, status=400)
+
     comment = Comment.objects.create(video=video, author=request.user, content=content)
     return Response({
         'id': comment.id,
