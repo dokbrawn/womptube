@@ -1,1 +1,2 @@
-web: gunicorn backend.wsgi
+application = get_wsgi_application()
+
