@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Безопасность
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "your-default-secret-key")
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ["*"]  # Замените на ваш домен в продакшене
 
 # Приложения
